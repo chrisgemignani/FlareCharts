@@ -1,0 +1,61 @@
+@font-face {
+   src: url("../resources/arial.swf");
+   fontWeight: normal;
+   fontFamily: Arial;
+}
+
+@font-face {
+   src: url("../resources/georgia.swf");
+   fontWeight: normal;
+   fontFamily: Georgia;
+}
+
+@font-face {
+   src: url("../resources/timesnewroman.swf");
+   fontWeight: normal;
+   fontFamily: "Times New Roman";
+}
+
+@font-face {
+   src: url("../resources/tahoma.swf");
+   fontWeight: normal;
+   fontFamily: "Tahoma";
+}
+
+@font-face {
+   src: url("../resources/andalemono.swf");
+   fontWeight: normal;
+   fontFamily: "Andale Mono";
+}
+
+@font-face {
+   src: url("../resources/chaparralpro-regular.swf");
+   fontWeight: normal;
+   fontFamily: "ChaparralPro-Regular";
+}
+
+
+@font-face {
+   src: url("../resources/trebuchetms.swf");
+   fontWeight: normal;
+   fontFamily: "Trebuchet MS";
+}
+
+@font-face {
+   src: url("../resources/consola.swf");
+   fontWeight: normal;
+   fontFamily: "CONSOLA";
+}
+
+
+@font-face {
+   src: url("../resources/anonymouspro.swf");
+   fontWeight: normal;
+   fontFamily: "Anonymous Pro";
+}
+
+@font-face {
+   src: url("../resources/myriadpro-regular.swf");
+   fontWeight: normal;
+   fontFamily: "MyriadPro-Regular";
+}

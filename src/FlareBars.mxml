@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Application xmlns:mx="http://www.adobe.com/2006/mxml"
+                layout="vertical"
+                xmlns:local="*"
+                backgroundGradientColors="[0xffffff, 0xffffff]"
+                initialize="init()"
+                fontFamily="Arial"
+                verticalGap="50" xmlns:legend="flare.vis.legend.*">
+  <mx:Script>
+    <![CDATA[
+      import org.juicekit.flare.util.palette.ColorPalette;
+      import org.juicekit.flare.util.palette.ColorPalette;
+      import flare.vis.legend.Legend;
+      import flare.vis.operator.layout.AxisLayout;
+      import flare.vis.data.ScaleBinding;
+      import flare.vis.data.Data;
+      public var mydata:Data = FlareBarChart.getData(10, 10);
+      
+      public var mydata2:Data = FlareBarChart2.getData(10, 10);
+
+      public function init():void {
+        fbc.data = mydata;
+        
+      }
+
+      public function compareLayouts():void {
+        var l1:AxisLayout = fbc.getLayout();
+        var l2:AxisLayout = fbc2.getLayout();
+        var x:int = 5;
+        x += 1;
+        this.addChild(Legend.fromScale('This', fbc2.vis.xyAxes.xAxis.axisScale, ColorPalette.getPaletteByName('hot')))
+      }
+    ]]>
+  </mx:Script>
+  <mx:Style source="style.css"/>
+  <mx:HBox>
+    <mx:Button click="fbc2.data = FlareBarChart2.getData(20,24);" label="changeit" fontSize="10"/>
+    <mx:Button click="fbc2.updateData();" label="update" fontSize="10"/>
+    <mx:Button click="fbc.setXMax(500)" label="500" fontSize="10"/>
+    <mx:Button click="fbc.setScale('log')" label="log" fontSize="10"/>
+    <mx:Button click="fbc2.setStyle('palette', 'summer')" label="summer" fontSize="10"/>
+    <mx:Button click="fbc2.setStyle('palette', 'hot')" label="spectral" fontSize="10"/>
+    <mx:Button click="fbc.setScale('linear')" label="linear" fontSize="10"/>
+    <mx:HSlider id="slider" minimum="200" maximum="400" change="{fbc.setXMax(slider.value)}"/>
+    <mx:Button click="compareLayouts()" label="layouts"/>
+    <mx:HSlider id="widthSlider"
+                change="{fbc.width = widthSlider.value}"
+                minimum="100"
+                maximum="400"
+                liveDragging="true"/>
+  </mx:HBox>
+  <local:FlareBarChart id="fbc" width="200" height="{fbc.width}"/>
+  <local:FlareBarChart2 id="fbc2" 
+                        data="{mydata2}"
+                        width="{fbc.width}"
+                        height="{fbc2.width}"
+                        xEncodingField="x"
+                        yEncodingField="y"
+                        colorEncodingField="state"
+                        palette="Blues"/>
+  
+
+</mx:Application>
