@@ -8,6 +8,7 @@
                 verticalGap="50" xmlns:legend="flare.vis.legend.*">
   <mx:Script>
     <![CDATA[
+      import org.juicekit.visual.controls.Styler;
       import org.juicekit.flare.util.palette.ColorPalette;
       import org.juicekit.flare.util.palette.ColorPalette;
       import flare.vis.legend.Legend;
@@ -16,47 +17,62 @@
       import flare.vis.data.Data;
       public var mydata:Data = FlareBarChart.getData(10, 10);
       
-      public var mydata2:Data = FlareBarChart2.getData(10, 10);
+      public var mydata2:Data = FlareBarChart.getData(10, 10);
+      public var arr:Array = [
+        {x: 50, x2: 20, y: '00', s: 1, state:'Vermont'}, 
+        {x: 50, x2: 15, y: '00', s: 2, state:'New Hampshire'}, 
+        {x: 50, x2: 10, y: '01', s: 3, state:'Connecticut'}, 
+      ];
 
       public function init():void {
-        fbc.data = mydata;
-        
+        Styler.instance.setStyles({fontFamily: 'Georgia', fontSize: 12});  
       }
-
-      public function compareLayouts():void {
-        var l1:AxisLayout = fbc.getLayout();
-        var l2:AxisLayout = fbc2.getLayout();
-        var x:int = 5;
-        x += 1;
-        this.addChild(Legend.fromScale('This', fbc2.vis.xyAxes.xAxis.axisScale, ColorPalette.getPaletteByName('hot')))
-      }
+      
     ]]>
   </mx:Script>
   <mx:Style source="style.css"/>
   <mx:HBox>
-    <mx:Button click="fbc2.data = FlareBarChart2.getData(20,24);" label="changeit" fontSize="10"/>
-    <mx:Button click="fbc2.updateData();" label="update" fontSize="10"/>
-    <mx:Button click="fbc.setXMax(500)" label="500" fontSize="10"/>
-    <mx:Button click="fbc.setScale('log')" label="log" fontSize="10"/>
-    <mx:Button click="fbc2.setStyle('palette', 'summer')" label="summer" fontSize="10"/>
-    <mx:Button click="fbc2.setStyle('palette', 'hot')" label="spectral" fontSize="10"/>
-    <mx:Button click="fbc.setScale('linear')" label="linear" fontSize="10"/>
-    <mx:HSlider id="slider" minimum="200" maximum="400" change="{fbc.setXMax(slider.value)}"/>
-    <mx:Button click="compareLayouts()" label="layouts"/>
+    <mx:Button click="fbc2.data = FlareBarChart.getData(20,24);" label="changeit"/>
+    <mx:Button click="fbc2.updateData();" label="update"/>
+    <mx:Button click="fbc2.xEncodingField = 'x2'" label="XEncoding"/>
+    <mx:Button click="fbc2.colorEncodingField = 'state'" label="colorEncoding"/>
+    <mx:TextInput id="txtPalette" enter="{fbc2.setStyle('palette', txtPalette.text)}" width="50"/>
+    <mx:Button click="fbc2.setStyle('palette', 'summer')" label="summer"/>
+    <mx:Button click="fbc2.setStyle('palette', 'hot')" label="spectral"/>
+    <mx:Button click="{Styler.instance.baseOptions = {fontFamily: 'Arial', fontSize: 10}}" label="Style"/>
+    <mx:Button click="{fbc2.setStyle('fontFamily', 'Georgia')}" label="Arial"/>
+    <mx:Button click="{fbc2.setStyle('fontSize', 20)}" label="fontSize"/>
+    <mx:Button click="{fbc2.data = arr}" label="data"/>
+    
+    <mx:CheckBox id="cbRev" change="{fbc2.xReverse = cbRev.selected}"/>
+    <mx:Button label="rev" click="{fbc2.vis.xyAxes.xReverse = !fbc2.vis.xyAxes.xReverse; fbc2.vis.update()}"/>
+    <mx:Button label="lines" click="{fbc2.xAxisShowLines=!fbc2.xAxisShowLines}"/>
+    <mx:TextInput id="txtFmt" change="{fbc2.xAxisLabelFormat = txtFmt.text}"/>
     <mx:HSlider id="widthSlider"
-                change="{fbc.width = widthSlider.value}"
+                change="{fbc2.width = widthSlider.value}"
                 minimum="100"
                 maximum="400"
                 liveDragging="true"/>
   </mx:HBox>
-  <local:FlareBarChart id="fbc" width="200" height="{fbc.width}"/>
-  <local:FlareBarChart2 id="fbc2" 
+  <mx:HBox>
+    <mx:Label styleName="jkBase" text="Lorem ipsum solarum"/>    
+  </mx:HBox>
+  <local:FlareBarChart id="fbc2" 
                         data="{mydata2}"
-                        width="{fbc.width}"
+                        width="300"
                         height="{fbc2.width}"
-                        xEncodingField="x"
-                        yEncodingField="y"
-                        colorEncodingField="state"
+                        xEncodingField="x" 
+                        yEncodingField="y"  
+                        strokeThickness=".5" 
+                        strokeAlpha="0.0" 
+                        strokeColor="0xffff00" 
+                        xAxisShowLines="true"
+                        xAxisShowLabels="true"
+                        yAxisShowLabels="true"
+                        yAxisShowLines="true"
+                        gapWidth="0.2"
+                        styleName="jkBase"
+                        colorEncodingField="s"
                         palette="Blues"/>
   
 
