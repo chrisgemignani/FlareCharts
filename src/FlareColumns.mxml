@@ -25,7 +25,7 @@
       ];
 
       public function init():void {
-        Styler.instance.setStyles({fontFamily: 'ChaparralPro-Regular', fontSize: 16});  
+        Styler.instance.setStyles({fontFamily: 'Georgia', fontSize: 12});  
       }
       
     ]]>
@@ -36,7 +36,7 @@
     <mx:Button click="fbc2.updateData();" label="update"/>
     <mx:Button click="fbc2.xEncodingField = 'x2'" label="XEncoding"/>
     <mx:Button click="fbc2.colorEncodingField = 'state'" label="colorEncoding"/>
-    <mx:TextInput id="txtPalette" enter="{fbc2.setStyle('palette', txtPalette.text)}" width="50"/>
+    <mx:TextInput id="txtPalette" enter="{fbc2.setStyle('palette', txtPalette.text)}" width="70"/>
     <mx:Button click="fbc2.setStyle('palette', 'summer')" label="summer"/>
     <mx:Button click="fbc2.setStyle('palette', 'hot')" label="spectral"/>
     <mx:Button click="{Styler.instance.baseOptions = {fontFamily: 'Arial', fontSize: 10}}" label="Style"/>
@@ -47,7 +47,7 @@
     <mx:CheckBox id="cbRev" change="{fbc2.xReverse = cbRev.selected}"/>
     <mx:Button label="rev" click="{fbc2.vis.xyAxes.xReverse = !fbc2.vis.xyAxes.xReverse; fbc2.vis.update()}"/>
     <mx:Button label="lines" click="{fbc2.xAxisShowLines=!fbc2.xAxisShowLines}"/>
-    <mx:TextInput id="txtFmt" change="{fbc2.xAxisLabelFormat = txtFmt.text}"/>
+    <mx:TextInput id="txtFmt" width="50" change="{fbc2.yAxisLabelFormat = txtFmt.text}"/>
     <mx:HSlider id="widthSlider"
                 change="{fbc2.width = widthSlider.value}"
                 minimum="80"
@@ -57,20 +57,20 @@
   <mx:HBox>
     <mx:Label styleName="jkBase" text="Lorem ipsum solarum"/>    
   </mx:HBox>
-  <local:FlareBarChart id="fbc2" 
+  <local:FlareColumnChart id="fbc2" 
                         data="{mydata2}"
-                        width="200"
+                        width="300"
                         height="{fbc2.width}"
-                        xEncodingField="x" 
-                        yEncodingField="y"  
-                        strokeThickness=".25" 
+                        xEncodingField="y" 
+                        yEncodingField="x"  
+                        strokeThickness=".5" 
                         strokeAlpha="0.0" 
                         strokeColor="0xffff00" 
                         xAxisShowLines="true"
                         xAxisShowLabels="true"
                         yAxisShowLabels="true"
-                        yAxisShowLines="false"
-                        gapWidth="0"
+                        yAxisShowLines="true"
+                        gapWidth="0.2"
                         styleName="jkBase"
                         colorEncodingField="s"
                         palette="Blues"/>

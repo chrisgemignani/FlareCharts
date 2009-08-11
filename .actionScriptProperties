@@ -12,6 +12,7 @@
 </compiler>
 <applications>
 <application path="FlareBars.mxml"/>
+<application path="FlareColumns.mxml"/>
 </applications>
 <modules/>
 <buildCSSFiles/>
