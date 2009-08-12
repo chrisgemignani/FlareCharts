@@ -5,9 +5,12 @@
                 backgroundGradientColors="[0xffffff, 0xffffff]"
                 initialize="init()"
                 fontFamily="Arial"
-                verticalGap="50" xmlns:legend="flare.vis.legend.*">
+                verticalGap="10" xmlns:legend="flare.vis.legend.*">
   <mx:Script>
     <![CDATA[
+      import mx.events.DropdownEvent;
+      import flare.vis.data.DataSprite;
+      import flare.vis.operator.encoder.PropertyEncoder;
       import org.juicekit.visual.controls.Styler;
       import org.juicekit.flare.util.palette.ColorPalette;
       import org.juicekit.flare.util.palette.ColorPalette;
@@ -28,15 +31,21 @@
         Styler.instance.setStyles({fontFamily: 'Georgia', fontSize: 12});  
       }
       
+      [Bindable]
+      public var v:Number = 8;
+      
+      public var extraOps:Array = [
+        new PropertyEncoder({ fillColor: 0xffff0000 }, 'nodes', function(d:DataSprite):Boolean { return d.data['x'] > v }) 
+      ]
+      
     ]]>
   </mx:Script>
   <mx:Style source="style.css"/>
   <mx:HBox>
     <mx:Button click="fbc2.data = FlareBarChart.getData(20,24);" label="changeit"/>
     <mx:Button click="fbc2.updateData();" label="update"/>
-    <mx:Button click="fbc2.xEncodingField = 'x2'" label="XEncoding"/>
+    <mx:Button click="fbc2.valueEncodingField = 'x2'" label="XEncoding"/>
     <mx:Button click="fbc2.colorEncodingField = 'state'" label="colorEncoding"/>
-    <mx:TextInput id="txtPalette" enter="{fbc2.setStyle('palette', txtPalette.text)}" width="70"/>
     <mx:Button click="fbc2.setStyle('palette', 'summer')" label="summer"/>
     <mx:Button click="fbc2.setStyle('palette', 'hot')" label="spectral"/>
     <mx:Button click="{Styler.instance.baseOptions = {fontFamily: 'Arial', fontSize: 10}}" label="Style"/>
@@ -44,36 +53,94 @@
     <mx:Button click="{fbc2.setStyle('fontSize', 20)}" label="fontSize"/>
     <mx:Button click="{fbc2.data = arr}" label="data"/>
     
-    <mx:CheckBox id="cbRev" change="{fbc2.xReverse = cbRev.selected}"/>
+    <mx:CheckBox id="cbRev" change="{fbc2.valueReverse = cbRev.selected}"/>
     <mx:Button label="rev" click="{fbc2.vis.xyAxes.xReverse = !fbc2.vis.xyAxes.xReverse; fbc2.vis.update()}"/>
-    <mx:Button label="lines" click="{fbc2.xAxisShowLines=!fbc2.xAxisShowLines}"/>
-    <mx:TextInput id="txtFmt" width="50" change="{fbc2.yAxisLabelFormat = txtFmt.text}"/>
+    <mx:Button label="lines" click="{fbc2.categoryAxisShowLines=!fbc2.categoryAxisShowLines}"/>
+  </mx:HBox>
+  <mx:HBox>
+    <mx:CheckBox id="cb1" change="{fbc2.valueAxisShowLines=cb1.selected}" selected="true"/>
+    <mx:Label styleName="jkNotes" text="valueAxisShowLines"/>
+    <mx:CheckBox id="cb2" change="{fbc2.valueAxisShowLabels=cb2.selected}" selected="true"/>
+    <mx:Label styleName="jkNotes" text="valueAxisShowLabels"/>
+    <mx:CheckBox id="cb3" change="{fbc2.categoryAxisShowLines=cb3.selected}" selected="true"/>
+    <mx:Label styleName="jkNotes" text="categoryAxisShowLines"/>
+    <mx:CheckBox id="cb4" change="{fbc2.categoryAxisShowLabels=cb4.selected}" selected="true"/>
+    <mx:Label styleName="jkNotes" text="categoryAxisShowLabels"/>
+    <mx:Spacer width="20"/>
+    <mx:CheckBox id="cb5" change="{fbc2.categoryReverse=cb5.selected}" selected="false"/>
+    <mx:Label styleName="jkNotes" text="categoryReverse"/>
+    <mx:CheckBox id="cb6" change="{fbc2.valueReverse=cb6.selected}" selected="false"/>
+    <mx:Label styleName="jkNotes" text="valueReverse"/>
+    <mx:Spacer width="20"/>
+    
+    <mx:TextInput id="txtFmt" width="50" change="{fbc2.valueAxisLabelFormat = txtFmt.text}"/>
+    <mx:Label styleName="jkNotes" text="valueAxisLabelFormat"/>
+    <mx:TextInput id="txtPalette" enter="{fbc2.setStyle('palette', txtPalette.text); fcc2.setStyle('palette', txtPalette.text)}" width="70"/>
+    <mx:Label styleName="jkNotes" text="palette"/>
+  </mx:HBox>
+  <mx:HBox>
     <mx:HSlider id="widthSlider"
                 change="{fbc2.width = widthSlider.value}"
-                minimum="80"
+                minimum="80" width="50"
                 maximum="600"
                 liveDragging="true"/>
+    <mx:Label styleName="jkNotes" text="chart width"/>
+    <mx:HSlider id="gapWidthSlider"
+                change="{fbc2.gapWidth = gapWidthSlider.value}"
+                minimum="0" width="50"
+                maximum="1"
+                liveDragging="true"/>
+    <mx:Label styleName="jkNotes" text="gapWidth"/>
+    <mx:HSlider id="strokeSlider"
+                change="{v = strokeSlider.value}"
+                minimum="0" width="50"
+                maximum="10"
+                liveDragging="true"/>
+    <mx:Label styleName="jkNotes" text="strokeThickness"/>
+    
   </mx:HBox>
   <mx:HBox>
     <mx:Label styleName="jkBase" text="Lorem ipsum solarum"/>    
   </mx:HBox>
-  <local:FlareColumnChart id="fbc2" 
-                        data="{mydata2}"
+
+
+<mx:HBox>
+  <local:FlareBarChart2 id="fbc2" 
+                        data="{mydata}"
                         width="300"
                         height="{fbc2.width}"
-                        xEncodingField="y" 
-                        yEncodingField="x"  
+                        categoryEncodingField="y" 
+                        valueEncodingField="x"  
                         strokeThickness=".5" 
                         strokeAlpha="0.0" 
                         strokeColor="0xffff00" 
-                        xAxisShowLines="true"
-                        xAxisShowLabels="true"
-                        yAxisShowLabels="true"
-                        yAxisShowLines="true"
                         gapWidth="0.2"
-                        styleName="jkBase"
-                        colorEncodingField="s"
+                        styleName="jkBase" extraOperators="{extraOps}"
+                        colorEncodingField="s" continuousUpdates="true"
                         palette="Blues"/>
-  
+  <mx:Spacer width="100"/>                        
+  <local:FlareColumnChart2 id="fcc2" 
+                        data="{mydata2}"
+                        width="300"
+                        height="{fbc2.width}"
+                        categoryEncodingField="y" 
+                        valueEncodingField="x"  
+                        strokeThickness="0.5" 
+                        strokeAlpha="0.0" 
+                        strokeColor="0xffff00" 
+                        gapWidth="{fbc2.gapWidth}"
+                        valueAxisShowLines="{fbc2.valueAxisShowLines}"
+                        valueAxisShowLabels="{fbc2.valueAxisShowLabels}"
+                        categoryAxisShowLines="{fbc2.categoryAxisShowLines}"
+                        categoryAxisShowLabels="{fbc2.categoryAxisShowLabels}"
+                        valueAxisLabelFormat="{fbc2.valueAxisLabelFormat}"
+                        categoryReverse="{fbc2.categoryReverse}"
+                        valueReverse="{fbc2.valueReverse}"
+                        styleName="jkBase"  
+                        colorEncodingField="s"
+                        />
+    
+</mx:HBox>                        
+
 
 </mx:Application>

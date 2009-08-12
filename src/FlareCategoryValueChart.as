@@ -5,7 +5,6 @@ package {
   import flare.util.Shapes;
   import flare.util.Strings;
   import flare.vis.axis.Axis;
-  import flare.vis.axis.CartesianAxes;
   import flare.vis.controls.TooltipControl;
   import flare.vis.data.Data;
   import flare.vis.data.DataSprite;
@@ -13,6 +12,7 @@ package {
   import flare.vis.events.TooltipEvent;
   import flare.vis.operator.Operator;
   import flare.vis.operator.encoder.ColorEncoder;
+  import flare.vis.operator.encoder.PropertyEncoder;
   import flare.vis.operator.layout.AxisLayout;
   
   import flash.geom.Rectangle;
@@ -131,34 +131,11 @@ package {
    */
   [Style(name="encodedColorAlpha", type="Number", inherit="no")]
 
-
   [Bindable]
-  public class FlareColumnChart extends FlareControlBase {
-    public function FlareColumnChart() {
+  public class FlareCategoryValueChart extends FlareControlBase {
+    public function FlareCategoryValueChart() {
       super();
     }
-    
-    // Invoke the class constructor to initialize the CSS defaults.
-    classConstructor();
-
-
-    private static function classConstructor():void {      
-      CSSUtil.setDefaultsFor("FlareColumnChart",
-        { fontColor: 0x333333
-        , fontFamily: 'Arial'
-        , fontSize: 12
-        , fontWeight: 'normal'
-        , fontStyle: 'normal'
-        , textPosition: "top"
-        , strokeAlpha: 1.0
-        , strokeColor: 0x000000
-        , strokeThickness: 0
-        , encodedColorAlpha: 1.0
-        , palette: 'hot'
-        }
-      );
-    }
-
 
 
     /**
@@ -226,6 +203,7 @@ package {
       invalidateProperties();
     }
     
+    
 
     private function propertyChanged():void {
       _updateVis = true;
@@ -234,6 +212,37 @@ package {
 
     public var _updateVis:Boolean = false;
 
+
+    //----------- operators -------------
+    
+    private function createOperators():void {
+        vis.operators.clear();
+        vis.operators.add(createAxisLayout());
+        vis.operators.add(createColorEncoder());
+        for each (var op:Operator in extraOperators) {
+          vis.operators.add(op);
+        }
+        propertyChanged();
+        _extraOperatorsChanged = false;
+    }
+    
+    public function set extraOperators(v:Array):void {  
+      _extraOperators = v;
+      // remove all the extra operators
+      while (vis.operators.length > 2) {
+        vis.operators.removeOperatorAt(vis.operators.length-1);
+      }    
+      // add all the extra operators back in
+      for each (var op:Operator in extraOperators) {
+        vis.operators.add(op);
+      }
+      propertyChanged();
+    }
+    public function get extraOperators():Array {
+      return _extraOperators;
+    }
+    public var _extraOperators:Array = [];
+    private var _extraOperatorsChanged:Boolean = false;
     
     
     //---------- color palette ----------
@@ -273,20 +282,20 @@ package {
 
     /**
      * Specifies a data <code>Object</code> property's name used
-     * to encode the x variable.
+     * to encode the category variable.
      *
      * @default "x"
      */
     [Inspectable(category="General")]
-    public function set xEncodingField(propertyName:String):void {
-      _xEncodingField = propertyName;
-      if (layout != null) layout.xField = asFlareProperty(_xEncodingField);
+    public function set categoryEncodingField(propertyName:String):void {
+      _categoryEncodingField = propertyName;
+      if (layout != null) layout.xField = asFlareProperty(_categoryEncodingField);
       _updateVis = true;
       invalidateProperties();
     }
 
-    public function get xEncodingField():String { return _xEncodingField; }
-    private var _xEncodingField:String = "x";
+    public function get categoryEncodingField():String { return _categoryEncodingField; }
+    private var _categoryEncodingField:String = "x";
     
 
     //-------------  y encoding field ------------------
@@ -299,15 +308,15 @@ package {
      * @default "y"
      */
     [Inspectable(category="General")]
-    public function set yEncodingField(propertyName:String):void {
-      _yEncodingField = propertyName;
-      if (layout != null) layout.yField = asFlareProperty(_yEncodingField);
+    public function set valueEncodingField(propertyName:String):void {
+      _valueEncodingField = propertyName;
+      if (layout != null) layout.yField = asFlareProperty(_valueEncodingField);
       _updateVis = true;
       invalidateProperties();
     }
 
-    public function get yEncodingField():String { return _yEncodingField; }    
-    private var _yEncodingField:String = "y";
+    public function get valueEncodingField():String { return _valueEncodingField; }    
+    private var _valueEncodingField:String = "y";
     
     
 
@@ -340,11 +349,9 @@ package {
         vis.data = newValue
         super.data = newValue;
         
-        vis.operators.clear();
-        vis.operators.add(createAxisLayout());
-        vis.operators.add(createColorEncoder());
+        createOperators();
         
-        vis.xyAxes.yAxis.axisScale['preferredMax'] = 100;        
+        valueAxis.axisScale['preferredMax'] = 100;        
         styleNodes();
         
         dispatchEvent(new JuiceKitEvent(JuiceKitEvent.DATA_ROOT_CHANGE));
@@ -378,7 +385,7 @@ package {
     /**
     * Create the color encoder to encode the _colorEncodingField
     */
-    private function createColorEncoder():ColorEncoder {
+    protected function createColorEncoder():ColorEncoder {
       return new ColorEncoder(asFlareProperty(_colorEncodingField)
                               , Data.NODES
                               , "fillColor"
@@ -391,11 +398,11 @@ package {
     /**
     * Create the axis layout
     */
-    private function createAxisLayout():Operator {
-      return new AxisLayout(asFlareProperty(xEncodingField), 
-                           asFlareProperty(yEncodingField), 
-                           false, 
-                           true);
+    protected function createAxisLayout():Operator {
+      return new AxisLayout(asFlareProperty(categoryEncodingField), 
+                            asFlareProperty(valueEncodingField), 
+                            false, 
+                            true);
     }
     
     
@@ -414,6 +421,26 @@ package {
     private var _gapWidth:Number = 0.25;
     private var barSize:Number = 20;
 
+    /**
+    * Subclasses should override these
+    */
+    protected function get categoryWidth():Number {
+      return vis.bounds.width;
+    }
+    protected var shape:String = Shapes.VERTICAL_BAR;
+    /** The tooltip format string. */
+    private var _tipText:String = "<b>Category</b>: {0}<br/>" + "<b>Position</b>: {1}<br/>" + "<b>Value</b>: {2}";
+    
+    public function get xyAxesCategoryReverse():Boolean { return vis.xyAxes.xReverse }
+    public function set xyAxesCategoryReverse(v:Boolean):void { vis.xyAxes.xReverse = v }
+    public function get xyAxesValueReverse():Boolean { return vis.xyAxes.yReverse }
+    public function set xyAxesValueReverse(v:Boolean):void { vis.xyAxes.yReverse = v }
+    
+    public function get categoryAxis():Axis { return vis.xyAxes.xAxis; }
+    public function get valueAxis():Axis { return vis.xyAxes.yAxis; }
+    
+    
+    
 
     /**
      * Apply node stylings to each NodeSprite.
@@ -426,10 +453,10 @@ package {
       const alpha:Number = getStyle("strokeAlpha");
       const color:uint = getStyle("strokeColor");
       const lineWidth:Number = getStyle("strokeThickness");
-      const numValues:int = vis.xyAxes.yAxis.axisScale.values().length;
-      barSize = Math.max(4,((vis.bounds.width - 0) * (1.0 - gapWidth)) / numValues);
+      const numValues:int = categoryAxis.axisScale.values().length;
+      barSize = Math.max(4,(categoryWidth * (1.0 - gapWidth)) / numValues);
       
-      vis.data.nodes.setProperties({shape: Shapes.VERTICAL_BAR, 
+      vis.data.nodes.setProperties({shape: shape, 
                                     lineWidth: lineWidth, 
                                     lineColor: color,
                                     lineAlpha: alpha, 
@@ -437,9 +464,6 @@ package {
     }
 
 
-    /** The tooltip format string. */
-    private static const _tipText:String = "<b>Category</b>: {0}<br/>" + "<b>Position</b>: {1}<br/>" + "<b>Value</b>: {2}";
-    
     /**
      * @private
      */
@@ -463,91 +487,91 @@ package {
     //----------------- axis properties ---------------
 
     /**
-    * Show gridlines for the xAxis
+    * Show gridlines for the categoryAxis
     */
-    public function set xAxisShowLines(v:Boolean):void { 
-      if (v != _xAxisShowLines) {
-        _xAxisShowLines = v;
-        if (vis != null) vis.xyAxes.xAxis.showLines = v;
+    public function set categoryAxisShowLines(v:Boolean):void { 
+      if (v != _categoryAxisShowLines) {
+        _categoryAxisShowLines = v;
+        if (vis != null) categoryAxis.showLines = v;
         propertyChanged();
       } 
     }
-    public function get xAxisShowLines():Boolean { return _xAxisShowLines; } 
-    private var _xAxisShowLines:Boolean = true;
+    public function get categoryAxisShowLines():Boolean { return _categoryAxisShowLines; } 
+    private var _categoryAxisShowLines:Boolean = true;
     
     /**
-    * Show gridlines for the yAxis
+    * Show gridlines for the valueAxis
     */
-    public function set yAxisShowLines(v:Boolean):void { 
-      if (v != _yAxisShowLines) {
-        _yAxisShowLines = v;
-        if (vis != null) vis.xyAxes.yAxis.showLines = v;
+    public function set valueAxisShowLines(v:Boolean):void { 
+      if (v != _valueAxisShowLines) {
+        _valueAxisShowLines = v;
+        if (vis != null) valueAxis.showLines = v;
         propertyChanged();
       } 
     }
-    public function get yAxisShowLines():Boolean { return _yAxisShowLines; } 
-    private var _yAxisShowLines:Boolean = true;
+    public function get valueAxisShowLines():Boolean { return _valueAxisShowLines; } 
+    private var _valueAxisShowLines:Boolean = true;
     
 
     /**
-    * Show labels for the xAxis
+    * Show labels for the category Axis
     * 
     * @default true
     */
-    public function set xAxisShowLabels(v:Boolean):void { 
-      if (v != _xAxisShowLabels) {
-        _xAxisShowLabels = v;
-        if (vis != null) vis.xyAxes.xAxis.showLabels = v;
+    public function set categoryAxisShowLabels(v:Boolean):void { 
+      if (v != _categoryAxisShowLabels) {
+        _categoryAxisShowLabels = v;
+        if (vis != null) categoryAxis.showLabels = v;
         propertyChanged();
       } 
     }
-    public function get xAxisShowLabels():Boolean { return _xAxisShowLabels; } 
-    private var _xAxisShowLabels:Boolean = true;
+    public function get categoryAxisShowLabels():Boolean { return _categoryAxisShowLabels; } 
+    private var _categoryAxisShowLabels:Boolean = true;
     
     /**
-    * Show labels for the yAxis
+    * Show labels for the value Axis
     * 
     * @default true
     */
-    public function set yAxisShowLabels(v:Boolean):void { 
-      if (v != _yAxisShowLabels) {
-        _yAxisShowLabels = v;
-        if (vis != null) vis.xyAxes.yAxis.showLabels = v;
+    public function set valueAxisShowLabels(v:Boolean):void { 
+      if (v != _valueAxisShowLabels) {
+        _valueAxisShowLabels = v;
+        if (vis != null) valueAxis.showLabels = v;
         propertyChanged();
       } 
     }
-    public function get yAxisShowLabels():Boolean { return _yAxisShowLabels; } 
-    private var _yAxisShowLabels:Boolean = true;
+    public function get valueAxisShowLabels():Boolean { return _valueAxisShowLabels; } 
+    private var _valueAxisShowLabels:Boolean = true;
     
     /**
-    * Reverse the values on the xAxis
+    * Reverse the values on the category Axis
     * 
     * @default false
     */
-    public function set xReverse(v:Boolean):void { 
-      if (v != _xReverse) {
-        _xReverse = v;
-        if (vis != null) vis.xyAxes.xReverse = v;
+    public function set categoryReverse(v:Boolean):void { 
+      if (v != _categoryReverse) {
+        _categoryReverse = v;
+        if (vis != null) xyAxesCategoryReverse = v;
         propertyChanged();
       } 
     }
-    public function get xReverse():Boolean { return _xReverse; } 
-    private var _xReverse:Boolean = false;
+    public function get categoryReverse():Boolean { return _categoryReverse; } 
+    private var _categoryReverse:Boolean = false;
     
     /**
-    * Reverse the values on the yAxis
+    * Reverse the values on the value Axis
     * 
     * @default false
     */
-    public function set yReverse(v:Boolean):void { 
-      if (v != _yReverse) {
-        _yReverse = v;
-        if (vis != null) vis.xyAxes.yReverse = v;
+    public function set valueReverse(v:Boolean):void { 
+      if (v != _valueReverse) {
+        _valueReverse = v;
+        if (vis != null) xyAxesValueReverse = v;
         propertyChanged();
       } 
     }
-    public function get yReverse():Boolean { return _yReverse; } 
-    private var _yReverse:Boolean = false;
+    public function get valueReverse():Boolean { return _valueReverse; } 
+    private var _valueReverse:Boolean = false;
     
     /**
     * The labelFormat for the xAxis. A Strings.format formatting
@@ -556,66 +580,71 @@ package {
     * 
     * @see flare.util.Strings
     */
-    public function set xAxisLabelFormat(v:String):void { 
-      if (v != _xAxisLabelFormat) {
-        _xAxisLabelFormat = v;
-        if (vis != null) vis.xyAxes.xAxis.labelFormat = v;
+    public function set categoryAxisLabelFormat(v:String):void { 
+      if (v != _categoryAxisLabelFormat) {
+        _categoryAxisLabelFormat = v;
+        if (vis != null) categoryAxis.labelFormat = v;
         propertyChanged();
       } 
     }
-    public function get xAxisLabelFormat():String { return _xAxisLabelFormat; } 
-    private var _xAxisLabelFormat:String = '0.00';
+    public function get categoryAxisLabelFormat():String { return _categoryAxisLabelFormat; } 
+    private var _categoryAxisLabelFormat:String = '0.00';
     
     /**
-    * The labelFormat for the yAxis. A Strings.format formatting
+    * The labelFormat for the value Axis. A Strings.format formatting
     * strings. For instance, "0.000" formats numbers with three
     * digits of precision.
     * 
     * @see flare.util.Strings
     */
-    public function set yAxisLabelFormat(v:String):void { 
-      if (v != _yAxisLabelFormat) {
-        _yAxisLabelFormat = v;
-        if (vis != null) vis.xyAxes.yAxis.labelFormat = v;
+    public function set valueAxisLabelFormat(v:String):void { 
+      if (v != _valueAxisLabelFormat) {
+        _valueAxisLabelFormat = v;
+        if (vis != null) valueAxis.labelFormat = v;
         propertyChanged();
       } 
     }
-    public function get yAxisLabelFormat():String { return _yAxisLabelFormat; } 
-    private var _yAxisLabelFormat:String = '0.00';
+    public function get valueAxisLabelFormat():String { return _valueAxisLabelFormat; } 
+    private var _valueAxisLabelFormat:String = '0.00';
+    
+
+    public function set continuousUpdates(v:Boolean):void { _continuousUpdates = v; propertyChanged() }
+    public function get continuousUpdates():Boolean { return _continuousUpdates; }
+    private var _continuousUpdates = false;
     
     /**
     * Called when the visualiation is first set up to 
     * initialize properties 
     */
     private function formatAxes():void {
-      // x axis properties
-      vis.xyAxes.xAxis.showLines = _xAxisShowLines;
-      vis.xyAxes.xAxis.showLabels = _xAxisShowLabels;
-      vis.xyAxes.xReverse = _xReverse;
-      vis.xyAxes.xAxis.labelFormat = _xAxisLabelFormat;
-      vis.xyAxes.xAxis.labelTextFormat = new TextFormat(getStyle('fontFamily'), 
+      // category axis properties
+      categoryAxis.showLines = _categoryAxisShowLines;
+      categoryAxis.showLabels = _categoryAxisShowLabels;
+      categoryReverse = _categoryReverse;
+      categoryAxis.labelFormat = _categoryAxisLabelFormat;
+      categoryAxis.labelTextFormat = new TextFormat(getStyle('fontFamily'), 
                                                         getStyle('fontSize'), 
                                                         getStyle('fontColor'),
                                                         getStyle('fontWeight')=='bold',
                                                         getStyle('fontStyle')=='italic');
-      (vis.xyAxes.xAxis.axisScale as ScaleBinding).zeroBased = true;
 
       // y axis properties
-      vis.xyAxes.yAxis.showLines = _yAxisShowLines;
-      vis.xyAxes.yAxis.showLabels = _yAxisShowLabels;
-      vis.xyAxes.yReverse = _yReverse;
-      vis.xyAxes.yAxis.labelFormat = _yAxisLabelFormat;
-      vis.xyAxes.yAxis.labelTextFormat = new TextFormat(getStyle('fontFamily'), 
+      valueAxis.showLines = _valueAxisShowLines;
+      valueAxis.showLabels = _valueAxisShowLabels;
+      valueReverse = _valueReverse;
+      valueAxis.labelFormat = _valueAxisLabelFormat;
+      valueAxis.labelTextFormat = new TextFormat(getStyle('fontFamily'), 
                                                         getStyle('fontSize'), 
                                                         getStyle('fontColor'),
                                                         getStyle('fontWeight')=='bold',
                                                         getStyle('fontStyle')=='italic');
+      (valueAxis.axisScale as ScaleBinding).zeroBased = true;
       
       // if the font is embedded, use TextSprite.EMBED to
       // get smoother display of small font sizes
       if (CSSUtil.isEmbeddedFont(new TextFormat(getStyle('fontFamily')))) {
-        vis.xyAxes.xAxis.labelTextMode = TextSprite.EMBED;      
-        vis.xyAxes.yAxis.labelTextMode = TextSprite.EMBED;              
+        valueAxis.labelTextMode = TextSprite.EMBED;      
+        categoryAxis.labelTextMode = TextSprite.EMBED;              
       }
            
     }
@@ -644,13 +673,18 @@ package {
           updateVis = true;
         }
 
+        if (layout == null || _extraOperatorsChanged) {
+          createOperators(); 
+          _extraOperatorsChanged = false;    
+          _updateVis = true; 
+        }
+//        if (layout == null) createAxisLayout();
+//        if (colorEncoder == null) createColorEncoder();
+        vis.continuousUpdates = _continuousUpdates;
+
         if (this.data is Data) {
           if (newDataLoaded) {
             newDataLoaded = false;
-            if (layout == null) createAxisLayout();
-            if (colorEncoder == null) {
-               createColorEncoder();
-            } 
             formatAxes();
             styleNodes();
             updateVis = true;
@@ -660,6 +694,10 @@ package {
             updateVisualization();
           }
           if (_updateVis) {
+            if (layout == null || _extraOperatorsChanged) {
+              createOperators(); 
+              _extraOperatorsChanged = false;    
+            }
             _updateVis = false;
             updateVisualization();
           }
