@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<mx:Application xmlns:mx="http://www.adobe.com/2006/mxml"
+<mx:Application xmlns:mx="http://www.adobe.com/2006/mxml" xmlns:charts="org.juicekit.charts.*"
                 layout="vertical"
                 xmlns:local="*"
                 backgroundGradientColors="[0xffffff, 0xffffff]"
@@ -18,9 +18,9 @@
       import flare.vis.operator.layout.AxisLayout;
       import flare.vis.data.ScaleBinding;
       import flare.vis.data.Data;
-      public var mydata:Data = FlareBarChart.getData(10, 10);
+      public var mydata:Data = FlareCategoryValueChart.getData(10, 10);
       
-      public var mydata2:Data = FlareBarChart.getData(10, 10);
+      public var mydata2:Data = FlareCategoryValueChart.getData(10, 10);
       public var arr:Array = [
         {x: 50, x2: 20, y: '00', s: 1, state:'Vermont'}, 
         {x: 50, x2: 15, y: '00', s: 2, state:'New Hampshire'}, 
@@ -32,17 +32,21 @@
       }
       
       [Bindable]
+      var cp:ColorPalette = ColorPalette.getPaletteByName('Reds').darken(0.2).desaturate(0.2);
+      
+      [Bindable]
       public var v:Number = 8;
       
+      [Bindable]
       public var extraOps:Array = [
-        new PropertyEncoder({ fillColor: 0xffff0000 }, 'nodes', function(d:DataSprite):Boolean { return d.data['x'] > v }) 
+        //new PropertyEncoder({ fillColor: 0xffff0000 }, 'nodes', function(d:DataSprite):Boolean { return d.data['x'] > v }) 
       ]
       
     ]]>
   </mx:Script>
   <mx:Style source="style.css"/>
   <mx:HBox>
-    <mx:Button click="fbc2.data = FlareBarChart.getData(20,24);" label="changeit"/>
+    <mx:Button click="fbc2.data = FlareCategoryValueChart.getData(20,24);" label="changeit"/>
     <mx:Button click="fbc2.updateData();" label="update"/>
     <mx:Button click="fbc2.valueEncodingField = 'x2'" label="XEncoding"/>
     <mx:Button click="fbc2.colorEncodingField = 'state'" label="colorEncoding"/>
@@ -71,11 +75,13 @@
     <mx:Label styleName="jkNotes" text="categoryReverse"/>
     <mx:CheckBox id="cb6" change="{fbc2.valueReverse=cb6.selected}" selected="false"/>
     <mx:Label styleName="jkNotes" text="valueReverse"/>
+    <mx:CheckBox id="cb7" change="{fbc2.showBorder=cb7.selected}" selected="true"/>
+    <mx:Label styleName="jkNotes" text="showBorder"/>
     <mx:Spacer width="20"/>
     
     <mx:TextInput id="txtFmt" width="50" change="{fbc2.valueAxisLabelFormat = txtFmt.text}"/>
     <mx:Label styleName="jkNotes" text="valueAxisLabelFormat"/>
-    <mx:TextInput id="txtPalette" enter="{fbc2.setStyle('palette', txtPalette.text); fcc2.setStyle('palette', txtPalette.text)}" width="70"/>
+    <mx:TextInput id="txtPalette" enter="{fbc2.palette = txtPalette.text}" width="70"/>
     <mx:Label styleName="jkNotes" text="palette"/>
   </mx:HBox>
   <mx:HBox>
@@ -105,27 +111,28 @@
 
 
 <mx:HBox>
-  <local:FlareBarChart2 id="fbc2" 
+  <charts:BarChart id="fbc2" 
                         data="{mydata}"
-                        width="300"
+                        width="300" 
                         height="{fbc2.width}"
                         categoryEncodingField="y" 
                         valueEncodingField="x"  
                         strokeThickness=".5" 
                         strokeAlpha="0.0" 
                         strokeColor="0xffff00" 
-                        gapWidth="0.2"
-                        styleName="jkBase" extraOperators="{extraOps}"
-                        colorEncodingField="s" continuousUpdates="true"
-                        palette="Blues"/>
+                        gapWidth="0.2" valueAxisMaximum="200"
+                        styleName="jkBase" 
+                        extraOperators="{extraOps}"
+                        colorEncodingField="s"
+                        palette="{cp}"/>
   <mx:Spacer width="100"/>                        
-  <local:FlareColumnChart2 id="fcc2" 
+  <charts:ColumnChart id="fcc2" 
                         data="{mydata2}"
                         width="300"
                         height="{fbc2.width}"
                         categoryEncodingField="y" 
                         valueEncodingField="x"  
-                        strokeThickness="0.5" 
+                        strokeThickness="0.5"  valueAxisMaximum="200"
                         strokeAlpha="0.0" 
                         strokeColor="0xffff00" 
                         gapWidth="{fbc2.gapWidth}"
@@ -136,10 +143,24 @@
                         valueAxisLabelFormat="{fbc2.valueAxisLabelFormat}"
                         categoryReverse="{fbc2.categoryReverse}"
                         valueReverse="{fbc2.valueReverse}"
+                        palette="{fbc2.palette}"
                         styleName="jkBase"  
                         colorEncodingField="s"
                         />
     
+  <mx:Spacer width="100"/> 
+  
+
+  <charts:ColumnChart id="simpleChart" 
+                        data="{[{state: 'Vermont', cnt: 80}, {state: 'Iowa', cnt: 45}, {state: 'Virginia', cnt: 29}]}"
+                        width="300"
+                        height="300"
+                        palette="0xff999999"
+                        categoryEncodingField="state"
+                        valueEncodingField="cnt"
+                        colorEncodingField="cnt"
+                        styleName="jkBase" 
+                        />
 </mx:HBox>                        
 
 

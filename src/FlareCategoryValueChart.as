@@ -1,5 +1,6 @@
-package {
+package  {
   import flare.display.TextSprite;
+  import flare.scale.LinearScale;
   import flare.scale.ScaleType;
   import flare.util.Maths;
   import flare.util.Shapes;
@@ -12,17 +13,18 @@ package {
   import flare.vis.events.TooltipEvent;
   import flare.vis.operator.Operator;
   import flare.vis.operator.encoder.ColorEncoder;
-  import flare.vis.operator.encoder.PropertyEncoder;
   import flare.vis.operator.layout.AxisLayout;
   
   import flash.geom.Rectangle;
   import flash.text.TextFormat;
   
   import mx.collections.ArrayCollection;
+  import mx.events.CollectionEvent;
   import mx.events.ResizeEvent;
   import mx.styles.StyleManager;
   
   import org.juicekit.events.JuiceKitEvent;
+  import org.juicekit.flare.util.Colors;
   import org.juicekit.flare.util.palette.ColorPalette;
   import org.juicekit.util.helper.CSSUtil;
   import org.juicekit.visual.controls.FlareControlBase;
@@ -79,19 +81,6 @@ package {
    *  @default "left"
    */
   [Style(name="textAlign", type="String", enumeration="left,center,right", inherit="yes")]
-
-
-  /**
-   * Determines the color palette to use
-   * Possible values are <code>"hot"</code>, <code>"cool"</code>,
-   * <code>"summer"</code>, <code>"winter"</code>, <code>"spring"</code>
-   * <code>"autumn"</code>, <code>"bone"</code>, <code>"copper"</code>
-   * or <code>"pink"</code>.
-   *
-   * @default "spectral"
-   */
-  [Style(name="palette", type="String", enumeration="hot,cool,summer,winter,spring,autumn,bone,copper,pink", inherit="yes")]
-
 
 
   /**
@@ -157,12 +146,11 @@ package {
      * Is property name used for visualization layout styling?
      */
     private function isLayoutStyle(styleProp:String):Boolean {
-      const paletteStyleProps:Array = [ "palette"
-                                      , "strokeAlpha"
+      const layoutStyleProps:Array = [ "strokeAlpha"
                                       , "strokeColor"
                                       , "strokeThickness"
                                       ];
-      return paletteStyleProps.indexOf(styleProp) !== -1;
+      return layoutStyleProps.indexOf(styleProp) !== -1;
     }
 
     /**
@@ -247,14 +235,67 @@ package {
     
     //---------- color palette ----------
     
-    private var _colorPaletteName:String = 'spectral';
+    /**
+    * Sets the color palette to use for the chart.
+    * 
+    * The value passed in can be a String, uint, or ColorPalette.
+    * 
+    * Some examples:
+    * 
+    * <ul>
+    * <li><code>"0xff0000"</code> - A single color red palette</li> 
+    * <li><code>"#ff0000"</code> - A single color red palette (CSS notation)</li> 
+    * <li><code>"red"</code> - A single color red palette (CSS literal color notation)</li> 
+    * <li><code>"0x88ff0000"</code> - A semi-transparent single color red palette</li> 
+    * <li><code>0x88ff0000</code> - A semi-transparent single color red palette</li> 
+    * <li><code>"Reds"</code> - The built-in "Reds" ColorPalette</li>
+    * <li><code>ColorPalette.getPaletteByName('Reds').darken()</code> - A darker version of the built-in "Reds" ColorPalette</li>
+    * <li><code>ColorPalette.getPaletteByName('Reds').darken(0.2).reverse()</code> - A still darker, reversed version of the built-in "Reds" ColorPalette</li>
+    * </ul>
+    * 
+    * @default 'spectral'
+    * 
+    * @see org.juicekit.flare.util.palette.ColorPalette
+    */
+    public function set palette(v:*):void {
+      if (v is ColorPalette) {
+        _colorPalette = v;
+      }
+      else if (v is String) {
+        // try to determine the color given a string
+        var c:uint = StyleManager.getColorName(v);
+        if (c != StyleManager.NOT_A_COLOR) {
+          if (Colors.a(c) == 0) c = Colors.setAlpha(c, 255);
+          _colorPalette = ColorPalette.fromColor(c);
+        }
+        else _colorPalette = ColorPalette.getPaletteByName(v);
+      }
+      else if (v is uint) {
+        _colorPalette = ColorPalette.fromColor(v);        
+      }
+      _rawPalette = v;
+      if (colorEncoder != null) colorEncoder.palette = colorPalette;
+      propertyChanged();
+    }
+    public function get palette():* { return _rawPalette; }
+
+    /**
+    * The palette entered by the user
+    */
+    private var _rawPalette:* = _colorPalette; 
+
+    
+    /**
+    * Stores the ColorPalette
+    */
+    protected var _colorPalette:ColorPalette = ColorPalette.getPaletteByName('spectral');
 
     /**
      * Return a color palette for interpolating color values
      * from the <code>colorEncodingField</code>'s data value.
      */
     protected function get colorPalette():ColorPalette {
-      return ColorPalette.getPaletteByName(getStyle("palette"));
+      return _colorPalette;
     }
 
     //---------- color encoding field ----------
@@ -269,6 +310,7 @@ package {
     public function set colorEncodingField(propertyName:String):void {
       _colorEncodingField = propertyName;
       if (colorEncoder != null) colorEncoder.source = asFlareProperty(_colorEncodingField);
+
       propertyChanged();
     }
     
@@ -327,6 +369,19 @@ package {
      */
     private var newDataLoaded:Boolean = false;
 
+    private function updateDataFromAC(event:CollectionEvent):void {
+      data = event.target;
+    }
+
+
+    public function set valueAxisMaximum(v:Number):void {
+      _valueAxisMaximum = v;
+      
+      if (vis && !isNaN(_valueAxisMaximum) && valueAxis.axisScale.scaleType == ScaleType.LINEAR) {
+        valueAxis.axisScale['preferredMax'] = _valueAxisMaximum;
+      }
+    }
+    private var _valueAxisMaximum:Number = NaN;
 
     /**
      * Sets the data value to a <code>Data</code> data
@@ -336,25 +391,41 @@ package {
      * @see flare.vis.data.Data
      */
     override public function set data(value:Object):void {
-      var newValue:Data = null;
-      if (value is Array) 
-        newValue = Data.fromArray(value as Array);
-      if (value is ArrayCollection) 
-        newValue = Data.fromArray(value.source as Array);
-      if (value is Data) 
-        newValue = value as Data;
-
-      newDataLoaded = newValue !== this.data;
-      if (newDataLoaded) {
-        vis.data = newValue
-        super.data = newValue;
+      if (value != null) {
+        var newValue:Data = null;
+        if (value is Array) 
+          newValue = Data.fromArray(value as Array);
+        if (value is ArrayCollection) {
+          (value as ArrayCollection).addEventListener(CollectionEvent.COLLECTION_CHANGE, updateDataFromAC);
+          newValue = Data.fromArray(value.source as Array);
+        }
+        if (value is Data) 
+          newValue = value as Data;
+  
+        //data.createEdges(asFlareProperty('y'), asFlareProperty(_colorEncodingField));
+        //data.createEdges(null, asFlareProperty('y'));
+          
+        newDataLoaded = newValue !== this.data;
+        if (newDataLoaded) {
+          vis.data = newValue
+          super.data = newValue;
+          
+          createOperators();
+          if (vis && !isNaN(_valueAxisMaximum) && valueAxis.axisScale.scaleType == ScaleType.LINEAR) {
+            valueAxis.axisScale['preferredMax'] = _valueAxisMaximum;
+          }
+      
+//          categoryAxis.axisScale['preferredMax'] = 100;
+//          valueAxis.axisScale['preferredMax'] = 100;
+          
+//          if (!isNaN(_valueAxisMaximum) && valueAxis.axisScale.scaleType == ScaleType.LINEAR) {
+//            valueAxis.axisScale['preferredMax'] = _valueAxisMaximum;
+//          }
+          styleNodes();
+          
+          dispatchEvent(new JuiceKitEvent(JuiceKitEvent.DATA_ROOT_CHANGE));
+        }
         
-        createOperators();
-        
-        valueAxis.axisScale['preferredMax'] = 100;        
-        styleNodes();
-        
-        dispatchEvent(new JuiceKitEvent(JuiceKitEvent.DATA_ROOT_CHANGE));
       }
     }
     override public function get data():Object { return super.data }
@@ -607,10 +678,28 @@ package {
     public function get valueAxisLabelFormat():String { return _valueAxisLabelFormat; } 
     private var _valueAxisLabelFormat:String = '0.00';
     
+    
+    /**
+    * Show the border of the chart.
+    *
+    * @default true
+    */
+    public function set showBorder(v:Boolean):void {
+      _showBorder = v;
+      // Set the Alpha of the border to make it show and hide
+      // For some reason, setting the border width to 0.0 doesn't work.
+      vis.xyAxes.borderColor = v ? 0xffcccccc : 0x00cccccc; 
+      propertyChanged();
+    }
+    public function get showBorder():Boolean {
+      return _showBorder;
+    }
+    private var _showBorder:Boolean = true;
+    
 
     public function set continuousUpdates(v:Boolean):void { _continuousUpdates = v; propertyChanged() }
     public function get continuousUpdates():Boolean { return _continuousUpdates; }
-    private var _continuousUpdates = false;
+    private var _continuousUpdates:Boolean = false;
     
     /**
     * Called when the visualiation is first set up to 
@@ -639,7 +728,7 @@ package {
                                                         getStyle('fontWeight')=='bold',
                                                         getStyle('fontStyle')=='italic');
       (valueAxis.axisScale as ScaleBinding).zeroBased = true;
-      
+            
       // if the font is embedded, use TextSprite.EMBED to
       // get smoother display of small font sizes
       if (CSSUtil.isEmbeddedFont(new TextFormat(getStyle('fontFamily')))) {
@@ -678,8 +767,7 @@ package {
           _extraOperatorsChanged = false;    
           _updateVis = true; 
         }
-//        if (layout == null) createAxisLayout();
-//        if (colorEncoder == null) createColorEncoder();
+
         vis.continuousUpdates = _continuousUpdates;
 
         if (this.data is Data) {
@@ -704,7 +792,7 @@ package {
         }
       }
     }
-    
+        
 
 
     /**

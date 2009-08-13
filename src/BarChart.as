@@ -8,11 +8,10 @@ package {
   
 
   [Bindable]
-  public class FlareBarChart2 extends FlareCategoryValueChart {
-    public function FlareBarChart2() {
+  public class BarChart extends FlareCategoryValueChart {
+    public function BarChart() {
       super();
       super.shape = Shapes.HORIZONTAL_BAR;
-      
     }
     
     // Invoke the class constructor to initialize the CSS defaults.
@@ -20,7 +19,7 @@ package {
 
 
     private static function classConstructor():void {      
-      CSSUtil.setDefaultsFor("FlareBarChart2",
+      CSSUtil.setDefaultsFor("BarChart",
         { fontColor: 0x333333
         , fontFamily: 'Arial'
         , fontSize: 12
@@ -37,8 +36,9 @@ package {
     }
 
     override protected function get categoryWidth():Number {
-      return vis.bounds.height;
+      return vis.bounds.width;
     }
+//    private var shape:String = Shapes.HORIZONTAL_BAR;
     /** The tooltip format string. */
     private var _tipText:String = "<b>Category</b>: {0}<br/>" + "<b>Position</b>: {1}<br/>" + "<b>Value</b>: {2}";
 

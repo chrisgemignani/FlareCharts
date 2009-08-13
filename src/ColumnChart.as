@@ -8,8 +8,8 @@ package {
   
 
   [Bindable]
-  public class FlareColumnChart2 extends FlareCategoryValueChart {
-    public function FlareColumnChart2() {
+  public class ColumnChart extends FlareCategoryValueChart {
+    public function ColumnChart() {
       super();
       super.shape = Shapes.VERTICAL_BAR;
     }
@@ -19,7 +19,7 @@ package {
 
 
     private static function classConstructor():void {      
-      CSSUtil.setDefaultsFor("FlareColumnChart2",
+      CSSUtil.setDefaultsFor("ColumnChart",
         { fontColor: 0x333333
         , fontFamily: 'Arial'
         , fontSize: 12
